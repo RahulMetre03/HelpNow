@@ -29,7 +29,7 @@ async def get_db():
         try:
             yield session
         except Exception as e:
-            logger.error(f"DB ERROR: {str(e)}", exc_info=True)
+            logger.info(f"DB ERROR: {str(e)}", exc_info=True)
             raise
         finally:
             logger.info("Closing DB session")
