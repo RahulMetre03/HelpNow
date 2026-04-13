@@ -56,37 +56,18 @@ async def signup(data: UserSignup, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-
-
-    logger.info("STEP 1: Request received")
-
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
-
-    logger.info(f"STEP 2: User fetched: {user}")
-
-    if not user:
-        logger.info("User not found")
+    if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    logger.info("STEP 3: Verifying password")
-
-    if not verify_password(data.password, user.password_hash):
-        logger.info("Password mismatch")
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    logger.info("STEP 4: Creating token")
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
-
-    logger.info("STEP 5: Returning response")
-
-    return {
-        "access_token": token
-    }
-
+    return TokenResponse(
+        access_token=token,
+        user=UserResponse.model_validate(user),
+    )
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
