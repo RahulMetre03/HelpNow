@@ -13,6 +13,9 @@ from app.services.auth_service import (
     hash_password, verify_password, create_access_token, get_current_user,
 )
 
+import logging
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
@@ -51,30 +54,36 @@ async def signup(data: UserSignup, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    try:
-        print("Login called")
 
-        result = await db.execute(select(User).where(User.email == data.email))
-        user = result.scalar_one_or_none()
 
-        print("User:", user)
+    logger.info("STEP 1: Request received")
 
-        if not user or not verify_password(data.password, user.password_hash):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+    result = await db.execute(select(User).where(User.email == data.email))
+    user = result.scalar_one_or_none()
 
-        token = create_access_token({"sub": str(user.id), "role": user.role})
+    logger.info(f"STEP 2: User fetched: {user}")
 
-        return TokenResponse(
-            access_token=token,
-            user=UserResponse.model_validate(user),
-        )
+    if not user:
+        logger.info("User not found")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    except Exception as e:
-        print("ERROR:", str(e))
-        raise
+    logger.info("STEP 3: Verifying password")
 
+    if not verify_password(data.password, user.password_hash):
+        logger.info("Password mismatch")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    logger.info("STEP 4: Creating token")
+
+    token = create_access_token({"sub": str(user.id), "role": user.role})
+
+    logger.info("STEP 5: Returning response")
+
+    return {
+        "access_token": token
+    }
 
 
 @router.get("/me", response_model=UserResponse)
