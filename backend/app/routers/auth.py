@@ -15,6 +15,7 @@ from app.services.auth_service import (
 
 import logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
