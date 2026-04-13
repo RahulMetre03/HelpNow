@@ -4,7 +4,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
 settings = get_settings()
 
