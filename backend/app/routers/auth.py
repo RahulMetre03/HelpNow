@@ -53,17 +53,27 @@ async def signup(data: UserSignup, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == data.email))
-    user = result.scalar_one_or_none()
-    if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    try:
+        print("Login called")
 
-    token = create_access_token({"sub": str(user.id), "role": user.role})
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse.model_validate(user),
-    )
+        result = await db.execute(select(User).where(User.email == data.email))
+        user = result.scalar_one_or_none()
 
+        print("User:", user)
+
+        if not user or not verify_password(data.password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        token = create_access_token({"sub": str(user.id), "role": user.role})
+
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse.model_validate(user),
+        )
+
+    except Exception as e:
+        print("ERROR:", str(e))
+        raise
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
