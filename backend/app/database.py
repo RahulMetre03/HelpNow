@@ -23,8 +23,11 @@ class Base(DeclarativeBase):
 
 
 async def get_db():
+    print("DB dependency called")
     async with AsyncSessionLocal() as session:
         try:
             yield session
+        except Exception as e:
+            print("DB ERROR:", e)
         finally:
             await session.close()
