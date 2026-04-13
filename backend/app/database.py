@@ -1,6 +1,10 @@
+import logging
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 settings = get_settings()
 
@@ -18,11 +22,14 @@ class Base(DeclarativeBase):
 
 
 async def get_db():
-    print("DB dependency called")
+    logger.info("DB dependency called")
+
     async with AsyncSessionLocal() as session:
         try:
             yield session
         except Exception as e:
-            print("DB ERROR:", e)
+            logger.error(f"DB ERROR: {str(e)}", exc_info=True)
+            raise
         finally:
+            logger.info("Closing DB session")
             await session.close()
