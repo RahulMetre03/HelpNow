@@ -191,7 +191,7 @@ export default function AppointmentsPage() {
                         Cancel
                       </button>
                     )}
-                    <Link href={`/chat?appointment=${a.id}`} className="btn btn-primary" style={{ padding: "6px 12px", fontSize: "0.75rem", textDecoration: "none" }}>
+                    <Link href={`/chat?appointment=${a.id}&patient=${encodeURIComponent(a.user?.full_name)}&therapist=${encodeURIComponent(a.therapist?.user?.full_name)}`} className="btn btn-primary" style={{ padding: "6px 12px", fontSize: "0.75rem", textDecoration: "none" }}>
                       💬 Chat
                     </Link>
                   </div>

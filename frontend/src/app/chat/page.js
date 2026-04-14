@@ -68,12 +68,17 @@ function ChatPageContent() {
 
   const createNewSession = async () => {
     const appointmentId = searchParams.get("appointment");
-    if (!appointmentId) {
+    const patient = searchParams.get("patient");
+    const therapist = searchParams.get("therapist");
+
+    if (!appointmentId || !patient || !therapist) {
       alert("Please select an appointment from the Appointments page first.");
       return;
     }
     try {
-      const session = await api.createSession(appointmentId, "Chat " + new Date().toLocaleDateString());
+      const today = new Date().toISOString().split("T")[0];
+      const sessionName = `${patient}_${therapist}_${today}`;
+      const session = await api.createSession(appointmentId, sessionName);
       setSessions([session, ...sessions]);
       setActiveSession(session.id);
       setMessages([]);
@@ -189,17 +194,17 @@ function ChatPageContent() {
               <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", textAlign: "center" }}>
                 <div style={{ fontSize: "4rem", marginBottom: "1rem", opacity: 0.5 }}>💬</div>
                 {searchParams.get("appointment") ? (
-                    <>
-                      <h2 style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: "0.5rem", color: "var(--text-secondary)" }}>No active chat</h2>
-                      <p style={{ fontSize: "0.9rem", marginBottom: "1.5rem" }}>Create a new chat segment to message.</p>
-                      <button onClick={createNewSession} className="btn btn-primary">✨ Start Chat</button>
-                    </>
+                  <>
+                    <h2 style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: "0.5rem", color: "var(--text-secondary)" }}>No active chat</h2>
+                    <p style={{ fontSize: "0.9rem", marginBottom: "1.5rem" }}>Create a new chat segment to message.</p>
+                    <button onClick={createNewSession} className="btn btn-primary">✨ Start Chat</button>
+                  </>
                 ) : (
-                    <>
-                      <h2 style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Select an Appointment</h2>
-                      <p style={{ fontSize: "0.9rem", marginBottom: "1.5rem", maxWidth: "300px" }}>You must select an appointment from the Dashboard or Appointments page to start messaging.</p>
-                      <Link href="/appointments" className="btn btn-primary" style={{ textDecoration: "none" }}>Go to Appointments</Link>
-                    </>
+                  <>
+                    <h2 style={{ fontSize: "1.3rem", fontWeight: 600, marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Select an Appointment</h2>
+                    <p style={{ fontSize: "0.9rem", marginBottom: "1.5rem", maxWidth: "300px" }}>You must select an appointment from the Dashboard or Appointments page to start messaging.</p>
+                    <Link href="/appointments" className="btn btn-primary" style={{ textDecoration: "none" }}>Go to Appointments</Link>
+                  </>
                 )}
               </div>
             ) : messages.length === 0 ? (
