@@ -35,7 +35,7 @@ export default function DashboardPage() {
         try {
           const p = await api.getMyTherapistProfile();
           if (p) setProfileData({ specialization: p.specialization || "", bio: p.bio || "", experience_years: p.experience_years || 0 });
-        } catch(e) {}
+        } catch (e) { }
       }
     } catch (e) {
       console.error(e);
@@ -54,7 +54,7 @@ export default function DashboardPage() {
         experience_years: parseInt(profileData.experience_years) || 0
       });
       setProfileModalOpen(false);
-    } catch(err) {
+    } catch (err) {
       alert("Failed to update profile: " + err.message);
     } finally {
       setProfileLoading(false);
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                       <span className={`badge badge-${a.status === "confirmed" ? "success" : a.status === "pending" ? "warning" : "primary"}`}>
                         {a.status}
                       </span>
-                      <Link href={`/chat?appointment=${a.id}`} className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: "0.75rem", textDecoration: "none" }}>
+                      <Link href={`/chat?appointment=${a.id}&patient=${encodeURIComponent(a.user?.full_name)}&therapist=${encodeURIComponent(a.therapist?.user?.full_name)}`} className="btn btn-secondary" style={{ padding: "4px 8px", fontSize: "0.75rem", textDecoration: "none" }}>
                         💬 Chat
                       </Link>
                     </div>
@@ -204,15 +204,15 @@ export default function DashboardPage() {
             <form onSubmit={handleUpdateProfile}>
               <div style={{ marginBottom: "1rem" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>Specialization</label>
-                <input type="text" className="input-field" value={profileData.specialization} onChange={(e) => setProfileData({...profileData, specialization: e.target.value})} required />
+                <input type="text" className="input-field" value={profileData.specialization} onChange={(e) => setProfileData({ ...profileData, specialization: e.target.value })} required />
               </div>
               <div style={{ marginBottom: "1rem" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>Experience (Years)</label>
-                <input type="number" min="0" className="input-field" value={profileData.experience_years} onChange={(e) => setProfileData({...profileData, experience_years: e.target.value})} required />
+                <input type="number" min="0" className="input-field" value={profileData.experience_years} onChange={(e) => setProfileData({ ...profileData, experience_years: e.target.value })} required />
               </div>
               <div style={{ marginBottom: "1.5rem" }}>
                 <label style={{ display: "block", marginBottom: "6px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>Bio</label>
-                <textarea className="input-field" rows={4} value={profileData.bio} onChange={(e) => setProfileData({...profileData, bio: e.target.value})} style={{ resize: "vertical" }} required />
+                <textarea className="input-field" rows={4} value={profileData.bio} onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })} style={{ resize: "vertical" }} required />
               </div>
 
               <div style={{ display: "flex", gap: "0.75rem" }}>
