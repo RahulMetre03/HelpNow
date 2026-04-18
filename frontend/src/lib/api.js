@@ -44,9 +44,22 @@ async function apiFetch(endpoint, options = {}) {
     headers,
   });
 
+  if (res.status === 400) {
+    if (token) {
+      logout();
+      throw new Error("Invalid credentials");
+    }
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || "Invalid credentials");
+  }
+
   if (res.status === 401) {
-    logout();
-    throw new Error("Unauthorized");
+    if (token) {
+      logout();
+      throw new Error("Session expired");
+    }
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || "Invalid credentials");
   }
 
   if (!res.ok) {
@@ -66,6 +79,7 @@ export const api = {
   // Therapists
   getTherapists: (spec) => apiFetch(`/api/therapists/${spec ? `?specialization=${spec}` : ""}`),
   getTherapist: (id) => apiFetch(`/api/therapists/${id}`),
+  getTherapistSlots: (id, date) => apiFetch(`/api/therapists/${id}/slots?date=${date}`),
   getMyTherapistProfile: () => apiFetch("/api/therapists/me"),
   updateTherapistProfile: (data) => apiFetch("/api/therapists/me", { method: "PATCH", body: JSON.stringify(data) }),
   setAvailability: (slots) => apiFetch("/api/therapists/availability", { method: "PUT", body: JSON.stringify(slots) }),

@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -55,6 +55,62 @@ async def list_therapists(
             availability_slots=slots,
         ))
     return response
+
+
+
+@router.get("/{therapist_id}/slots")
+async def get_therapist_slots(
+    therapist_id: str,
+    date: str,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        query_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format, use YYYY-MM-DD")
+
+    if query_date.weekday() >= 5: # Saturday or Sunday
+        return []
+
+    base_start_times = ["10:00", "11:10", "12:20", "14:20", "15:30", "16:40"]
+    
+    from app.models.appointment import Appointment
+    result = await db.execute(
+        select(Appointment).where(
+            Appointment.therapist_id == therapist_id,
+            Appointment.status.in_(["pending", "confirmed"])
+        )
+    )
+    appointments = result.scalars().all()
+    
+    booked_utc_times = set()
+    for a in appointments:
+        # DB may return naive UTC datetime; ensure it is timezone aware
+        if getattr(a.scheduled_at, 'tzinfo', None) is None:
+            utc_dt = a.scheduled_at.replace(tzinfo=timezone.utc)
+        else:
+            utc_dt = a.scheduled_at.astimezone(timezone.utc)
+        booked_utc_times.add(utc_dt)
+
+    slots = []
+    for t in base_start_times:
+        slot_local = datetime.strptime(f"{date} {t}", "%Y-%m-%d %H:%M")
+        # Provide it with system's local timezone
+        slot_local_aware = slot_local.astimezone()
+        slot_utc = slot_local_aware.astimezone(timezone.utc)
+        
+        is_available = True
+        for b in booked_utc_times:
+            if b == slot_utc:
+                is_available = False
+                break
+
+        slots.append({
+            "time": t,
+            "available": is_available
+        })
+        
+    return slots
 
 
 @router.get("/{therapist_id}", response_model=TherapistDetailResponse)

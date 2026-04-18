@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from datetime import timedelta, timezone
 
 from app.database import get_db
 from app.models.user import User
@@ -27,6 +28,22 @@ async def create_appointment(
     therapist = result.scalar_one_or_none()
     if not therapist:
         raise HTTPException(status_code=404, detail="Therapist not found")
+
+    req_start = data.scheduled_at.astimezone(timezone.utc)
+    req_end = req_start + timedelta(minutes=data.duration_minutes)
+
+    conflict_result = await db.execute(
+        select(Appointment).where(
+            Appointment.therapist_id == data.therapist_id,
+            Appointment.status.in_(["pending", "confirmed"])
+        )
+    )
+    existing_appointments = conflict_result.scalars().all()
+    for a in existing_appointments:
+        a_start = a.scheduled_at.astimezone(timezone.utc)
+        a_end = a_start + timedelta(minutes=a.duration_minutes)
+        if req_start < a_end and a_start < req_end:
+            raise HTTPException(status_code=409, detail="This slot is already booked.")
 
     appointment = Appointment(
         user_id=current_user.id,
