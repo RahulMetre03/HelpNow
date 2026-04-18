@@ -12,11 +12,23 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("browse"); // browse | my
   const [bookingModal, setBookingModal] = useState(null);
+  const [postBookingModal, setPostBookingModal] = useState(null);
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [availableSlots, setAvailableSlots] = useState([]);
+
+  useEffect(() => {
+    if (bookingModal?.id && bookingDate) {
+      api.getTherapistSlots(bookingModal.id, bookingDate)
+        .then(setAvailableSlots)
+        .catch(console.error);
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [bookingDate, bookingModal]);
 
   useEffect(() => {
     const u = getUser();
@@ -42,13 +54,13 @@ export default function AppointmentsPage() {
     setBookingLoading(true);
     try {
       const scheduled = new Date(`${bookingDate}T${bookingTime}`).toISOString();
-      await api.createAppointment({
+      const newAppointment = await api.createAppointment({
         therapist_id: bookingModal.id,
         scheduled_at: scheduled,
         duration_minutes: 60,
         notes: bookingNotes || null,
       });
-      setMessage("Appointment booked successfully! ✅");
+      setPostBookingModal({ appointment: newAppointment, therapist: bookingModal });
       setBookingModal(null);
       setBookingDate("");
       setBookingTime("");
@@ -202,7 +214,6 @@ export default function AppointmentsPage() {
         )}
       </div>
 
-      {/* Booking Modal */}
       {bookingModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem" }}
           onClick={(e) => e.target === e.currentTarget && setBookingModal(null)}
@@ -219,7 +230,33 @@ export default function AppointmentsPage() {
             </div>
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", marginBottom: "6px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>Time</label>
-              <input type="time" className="input-field" value={bookingTime} onChange={(e) => setBookingTime(e.target.value)} required />
+              {bookingDate ? (
+                availableSlots.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                    {availableSlots.map(s => (
+                      <button
+                        key={s.time}
+                        type="button"
+                        onClick={() => setBookingTime(s.time)}
+                        disabled={!s.available}
+                        style={{
+                          padding: "8px", borderRadius: "6px", border: "1px solid var(--border)",
+                          background: !s.available ? "var(--bg-input)" : bookingTime === s.time ? "var(--primary)" : "transparent",
+                          color: !s.available ? "var(--text-muted)" : bookingTime === s.time ? "white" : "inherit",
+                          cursor: !s.available ? "not-allowed" : "pointer",
+                          fontFamily: "inherit", fontSize: "0.85rem"
+                        }}
+                      >
+                        {s.time}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>No slots available.</div>
+                )
+              ) : (
+                <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Please select a date first.</div>
+              )}
             </div>
             <div style={{ marginBottom: "1.5rem" }}>
               <label style={{ display: "block", marginBottom: "6px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>Notes (optional)</label>
@@ -231,6 +268,27 @@ export default function AppointmentsPage() {
               <button onClick={bookAppointment} className="btn btn-primary" style={{ flex: 1 }} disabled={!bookingDate || !bookingTime || bookingLoading}>
                 {bookingLoading ? <span className="spinner" /> : "Confirm Booking"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {postBookingModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem" }}>
+          <div className="glass-card animate-fade-in" style={{ width: "100%", maxWidth: "400px", padding: "2rem", textAlign: "center" }}>
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "1rem" }}>Appointment Booked</h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "2rem" }}>
+              Share your feelings with our AI chatbot before your session. This helps your therapist understand you better.
+            </p>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button onClick={() => setPostBookingModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Close</button>
+              <Link
+                href={`/chat?appointment=${postBookingModal.appointment.id}&patient=${encodeURIComponent(user.full_name)}&therapist=${encodeURIComponent(postBookingModal.therapist.user?.full_name)}`}
+                className="btn btn-primary"
+                style={{ flex: 1, textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center" }}
+              >
+                Chat
+              </Link>
             </div>
           </div>
         </div>

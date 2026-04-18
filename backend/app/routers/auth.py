@@ -61,7 +61,7 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=400, detail="Invalid email or password")
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return TokenResponse(
