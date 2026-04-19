@@ -299,7 +299,7 @@ function ChatPageContent() {
                   </button>
                 </div>
                 <p style={{ textAlign: "center", marginTop: "8px", fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                  HelpNow AI is an automated companion. Therapists monitor chats but do not reply directly.
+                  HelpNow AI is here to offer support and companionship, but your therapist is best for professional guidance.
                 </p>
               </form>
             )
