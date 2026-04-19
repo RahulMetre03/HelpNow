@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db, AsyncSessionLocal
@@ -15,6 +15,35 @@ from app.services.auth_service import get_current_user, decode_token
 from app.services.chat_service import get_ai_response
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
+
+MAX_CHAT_PER_SIDE = 10
+
+async def check_chat_limit(db: AsyncSession, session_id: str):
+    user_count = await db.scalar(
+        select(func.count()).where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.sender == "user"
+        )
+    )
+
+    ai_count = await db.scalar(
+        select(func.count()).where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.sender == "ai"
+        )
+    )
+
+    if user_count >= MAX_CHAT_PER_SIDE:
+        raise HTTPException(
+            status_code=400,
+            detail="Chat limit reached. Please start a new session."
+        )
+
+    if ai_count >= MAX_CHAT_PER_SIDE:
+        raise HTTPException(
+            status_code=400,
+            detail="Session completed. Start a new chat."
+        )
 
 # Simple connection manager for websockets
 class ConnectionManager:
@@ -139,7 +168,7 @@ async def list_sessions(
     sessions = result.scalars().all()
     return [ChatSessionResponse.model_validate(s) for s in sessions]
 
-@router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
+@router.get("/sessions/{session_id}/messages")
 async def get_messages(
     session_id: str,
     current_user: User = Depends(get_current_user),
@@ -156,7 +185,29 @@ async def get_messages(
         .order_by(ChatMessage.sent_at.asc())
     )
     messages = messages_result.scalars().all()
-    return [ChatMessageResponse.model_validate(m) for m in messages]
+    user_count = await db.scalar(
+        select(func.count()).where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.sender == "user"
+        )
+    )
+
+    ai_count = await db.scalar(
+        select(func.count()).where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.sender == "ai"
+        )
+    )
+
+    chat_limit_reached = (
+        user_count >= MAX_CHAT_PER_SIDE or ai_count >= MAX_CHAT_PER_SIDE
+    )
+
+    return {
+        "messages": [ChatMessageResponse.model_validate(m) for m in messages],
+        "chat_limit_reached": chat_limit_reached
+    }
+    # return [ChatMessageResponse.model_validate(m) for m in messages]
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatMessageResponse)
 async def send_message(
@@ -173,6 +224,7 @@ async def send_message(
     if not has_access:
         raise HTTPException(status_code=403, detail="Not authorized or session not found")
 
+    await check_chat_limit(db, session_id) 
     user_msg = ChatMessage(session_id=session_id, sender="user", content=data.content)
     db.add(user_msg)
     await db.commit()
@@ -249,6 +301,13 @@ async def websocket_chat(websocket: WebSocket, session_id: str):
                  continue
 
             async with AsyncSessionLocal() as db:
+                try:
+                    await check_chat_limit(db, session_id)
+                except HTTPException:
+                    await websocket.send_json({
+                        "error": "Chat limit reached. Start a new session."
+                    })
+                    continue
                 user_msg = ChatMessage(session_id=session_id, sender="user", content=data)
                 db.add(user_msg)
                 await db.commit()
