@@ -23,6 +23,10 @@ function ChatPageContent() {
   const [sending, setSending] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const [serverChatLimit, setServerChatLimit] = useState(false);
+
+  const isChatLocked = serverChatLimit || messages.filter(m => m.sender === "user").length >= 10;
 
   useEffect(() => {
     const u = getUser();
@@ -34,6 +38,12 @@ function ChatPageContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!sending && activeSession && !isChatLocked) {
+      inputRef.current?.focus();
+    }
+  }, [activeSession, sending, isChatLocked]);
 
   const loadSessions = async () => {
     try {
@@ -52,8 +62,14 @@ function ChatPageContent() {
   const selectSession = async (id) => {
     setActiveSession(id);
     try {
-      const msgs = await api.getMessages(id);
-      setMessages(msgs);
+      const data = await api.getMessages(id);
+      if (Array.isArray(data)) {
+        setMessages(data);
+        setServerChatLimit(false);
+      } else {
+        setMessages(data.messages || []);
+        setServerChatLimit(data.chat_limit_reached || false);
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -98,7 +114,10 @@ function ChatPageContent() {
       const aiMsg = await api.sendMessage(activeSession, input);
       setMessages((prev) => [...prev, aiMsg]);
     } catch (e) {
-      setMessages((prev) => [...prev, { id: Date.now() + 1, sender: "ai", content: "Sorry, I couldn't respond right now. Please try again. 💙", sent_at: new Date().toISOString() }]);
+      const errorMsg = e.message && (e.message.includes("limit") || e.message.includes("completed"))
+        ? `⚠️ ${e.message}`
+        : "Sorry, I couldn't respond right now. Please try again. 💙";
+      setMessages((prev) => [...prev, { id: Date.now() + 1, sender: "ai", content: errorMsg, sent_at: new Date().toISOString() }]);
     } finally {
       setSending(false);
     }
@@ -276,10 +295,20 @@ function ChatPageContent() {
                   <span style={{ fontSize: "1.2rem", verticalAlign: "middle" }}>👁️</span> You are in view-only mode. Therapists monitor patient-AI chats but cannot intervene here.
                 </p>
               </div>
+            ) : isChatLocked ? (
+              <div style={{ padding: "1.5rem", background: "var(--bg-card)", borderTop: "1px solid var(--border)", textAlign: "center" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  <span style={{ fontSize: "1.2rem", verticalAlign: "middle" }}></span> Chat limit reached for this session.
+                </p>
+                {/* <button onClick={createNewSession} className="btn btn-primary" style={{ marginTop: "1rem", fontSize: "0.85rem" }}>
+                  ✨ Start a New Chat Segment
+                </button> */}
+              </div>
             ) : (
               <form onSubmit={sendMessage} style={{ padding: "1rem 1.5rem", borderTop: "1px solid var(--border)", background: "var(--bg-card)" }}>
                 <div style={{ maxWidth: "720px", margin: "0 auto", display: "flex", gap: "0.75rem" }}>
                   <input
+                    ref={inputRef}
                     type="text"
                     className="input-field"
                     placeholder="Type your message..."
