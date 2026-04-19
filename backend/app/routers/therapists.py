@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
+from zoneinfo import ZoneInfo
 from app.database import get_db
 from app.models.user import User
 from app.models.therapist import Therapist, TherapistAvailability
@@ -14,7 +14,7 @@ from app.schemas.schemas import (
 from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api/therapists", tags=["Therapists"])
-
+IST = ZoneInfo("Asia/Kolkata")
 
 @router.get("/", response_model=list[TherapistDetailResponse])
 async def list_therapists(
@@ -96,7 +96,8 @@ async def get_therapist_slots(
     for t in base_start_times:
         slot_local = datetime.strptime(f"{date} {t}", "%Y-%m-%d %H:%M")
         # Provide it with system's local timezone
-        slot_local_aware = slot_local.astimezone()
+        slot_local = datetime.strptime(f"{date} {t}", "%Y-%m-%d %H:%M")
+        slot_local_aware = slot_local.replace(tzinfo=IST)
         slot_utc = slot_local_aware.astimezone(timezone.utc)
         
         is_available = True
