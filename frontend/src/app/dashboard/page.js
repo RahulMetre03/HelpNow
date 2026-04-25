@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUser, logout } from "@/lib/api";
+import BreathingExercise from "./components/ResetCard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -106,13 +107,7 @@ export default function DashboardPage() {
               {user.role === "therapist" ? "View upcoming appointments" : "Find a therapist"}
             </p>
           </Link>
-          <div className="glass-card animate-fade-in" style={{ padding: "1.5rem", animationDelay: "0.3s" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.8rem" }}>📊</div>
-            <h3 style={{ fontWeight: 700, marginBottom: "0.3rem" }}>Stats</h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-              {sessions.length} chats · {appointments.length} appointments
-            </p>
-          </div>
+          <BreathingExercise />
           {user.role === "therapist" && (
             <button onClick={() => setProfileModalOpen(true)} className="glass-card animate-fade-in" style={{ padding: "1.5rem", border: "none", background: "var(--bg-card)", color: "inherit", cursor: "pointer", fontFamily: "inherit", textAlign: "left", animationDelay: "0.4s" }}>
               <div style={{ fontSize: "2rem", marginBottom: "0.8rem" }}>⚙️</div>
