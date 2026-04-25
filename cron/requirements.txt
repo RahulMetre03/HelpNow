@@ -1,0 +1,5 @@
+pip install fastapi
+pip install uvicorn
+pip install apscheduler
+pip install asyncpg
+pip install python-dotenv
