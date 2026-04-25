@@ -170,9 +170,32 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
                   )}
-                  <button onClick={() => setBookingModal(t)} className="btn btn-accent" style={{ width: "100%", fontSize: "0.85rem", padding: "10px" }}>
-                    Book Session
-                  </button>
+                  {(() => {
+                    const hasActiveAppt = appointments.some(a => 
+                      String(a.therapist_id) === String(t.id) || String(a.therapist?.id) === String(t.id)
+                    ) && appointments.some(a => 
+                      (String(a.therapist_id) === String(t.id) || String(a.therapist?.id) === String(t.id)) && 
+                      (a.status === "pending" || a.status === "confirmed")
+                    );
+                    return (
+                      <div title={hasActiveAppt ? "You already have an appointment" : ""} style={{ width: "100%", cursor: hasActiveAppt ? "not-allowed" : "pointer" }}>
+                        <button 
+                          onClick={() => setBookingModal(t)} 
+                          className="btn btn-accent" 
+                          style={{ 
+                            width: "100%", 
+                            fontSize: "0.85rem", 
+                            padding: "10px", 
+                            opacity: hasActiveAppt ? 0.5 : 1,
+                            pointerEvents: hasActiveAppt ? "none" : "auto"
+                          }}
+                          disabled={hasActiveAppt}
+                        >
+                          Book Session
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))
             )}
