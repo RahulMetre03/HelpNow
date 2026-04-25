@@ -72,6 +72,6 @@ def stop_scheduler():
     print("Cron job stopped...")
 
 
-@app.get("/health-check", response_class=PlainTextResponse)
+@app.get("/health-check")
 def health_check():
     return "OK"
