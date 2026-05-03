@@ -19,6 +19,7 @@ IST = ZoneInfo("Asia/Kolkata")
 @router.get("/", response_model=list[TherapistDetailResponse])
 async def list_therapists(
     specialization: str | None = None,
+    city: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Therapist).options(
@@ -27,6 +28,8 @@ async def list_therapists(
     )
     if specialization:
         query = query.where(Therapist.specialization.ilike(f"%{specialization}%"))
+    if city:
+        query = query.where(Therapist.city.ilike(city))
 
     result = await db.execute(query)
     therapists = result.scalars().all()
@@ -51,6 +54,7 @@ async def list_therapists(
             bio=t.bio,
             experience_years=t.experience_years,
             rating=t.rating,
+            city=t.city,
             user=UserResponse.model_validate(t.user) if t.user else None,
             availability_slots=slots,
         ))
@@ -143,6 +147,7 @@ async def get_therapist(therapist_id: str, db: AsyncSession = Depends(get_db)):
         bio=therapist.bio,
         experience_years=therapist.experience_years,
         rating=therapist.rating,
+        city=therapist.city,
         user=UserResponse.model_validate(therapist.user) if therapist.user else None,
         availability_slots=slots,
     )
@@ -164,7 +169,7 @@ async def get_my_therapist_profile(current_user: User = Depends(get_current_user
         AvailabilityResponse(id=s.id, therapist_id=s.therapist_id, day_of_week=s.day_of_week, start_time=s.start_time.strftime("%H:%M") if isinstance(s.start_time, time) else str(s.start_time), end_time=s.end_time.strftime("%H:%M") if isinstance(s.end_time, time) else str(s.end_time))
         for s in therapist.availability_slots
     ]
-    return TherapistDetailResponse(id=therapist.id, user_id=therapist.user_id, specialization=therapist.specialization, license_number=therapist.license_number, bio=therapist.bio, experience_years=therapist.experience_years, rating=therapist.rating, user=UserResponse.model_validate(therapist.user) if therapist.user else None, availability_slots=slots)
+    return TherapistDetailResponse(id=therapist.id, user_id=therapist.user_id, specialization=therapist.specialization, license_number=therapist.license_number, bio=therapist.bio, experience_years=therapist.experience_years, rating=therapist.rating, city=therapist.city, user=UserResponse.model_validate(therapist.user) if therapist.user else None, availability_slots=slots)
 
 @router.put("/availability", response_model=list[AvailabilityResponse])
 async def set_availability(
@@ -239,6 +244,8 @@ async def update_therapist_profile(
         therapist.bio = data.bio
     if data.experience_years is not None:
         therapist.experience_years = data.experience_years
+    if data.city is not None:
+        therapist.city = data.city
 
     await db.commit()
     await db.refresh(therapist)
@@ -262,6 +269,7 @@ async def update_therapist_profile(
         bio=therapist.bio,
         experience_years=therapist.experience_years,
         rating=therapist.rating,
+        city=therapist.city,
         user=UserResponse.model_validate(therapist.user) if therapist.user else None,
         availability_slots=slots,
     )

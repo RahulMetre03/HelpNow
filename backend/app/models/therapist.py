@@ -20,6 +20,7 @@ class Therapist(Base):
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     experience_years: Mapped[int] = mapped_column(Integer, default=0)
     rating: Mapped[float] = mapped_column(Float, default=0.0)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="therapist_profile")

@@ -71,3 +71,20 @@ CREATE INDEX idx_appointments_therapist ON appointments(therapist_id);
 CREATE INDEX idx_chat_sessions_user ON chat_sessions(user_id);
 CREATE INDEX idx_chat_messages_session ON chat_messages(session_id);
 CREATE INDEX idx_chat_messages_sent_at ON chat_messages(sent_at);
+
+
+ALTER TABLE therapists
+ADD COLUMN slot_duration_minutes INTEGER DEFAULT 60;
+
+CREATE TABLE therapist_unavailability (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    therapist_id UUID NOT NULL REFERENCES therapists(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    reason TEXT
+);
+
+-- Location support
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE therapists ADD COLUMN IF NOT EXISTS city VARCHAR(100);

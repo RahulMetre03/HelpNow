@@ -77,7 +77,13 @@ export const api = {
   getMe: () => apiFetch("/api/auth/me"),
 
   // Therapists
-  getTherapists: (spec) => apiFetch(`/api/therapists/${spec ? `?specialization=${spec}` : ""}`),
+  getTherapists: (spec, city) => {
+    const params = new URLSearchParams();
+    if (spec) params.set("specialization", spec);
+    if (city) params.set("city", city);
+    const qs = params.toString();
+    return apiFetch(`/api/therapists/${qs ? `?${qs}` : ""}`);
+  },
   getTherapist: (id) => apiFetch(`/api/therapists/${id}`),
   getTherapistSlots: (id, date) => apiFetch(`/api/therapists/${id}/slots?date=${date}`),
   getMyTherapistProfile: () => apiFetch("/api/therapists/me"),

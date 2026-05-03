@@ -34,6 +34,7 @@ async def signup(data: UserSignup, db: AsyncSession = Depends(get_db)):
         password_hash=hash_password(data.password),
         full_name=data.full_name,
         role=data.role,
+        city=data.city,
     )
     db.add(user)
     await db.commit()
@@ -45,6 +46,7 @@ async def signup(data: UserSignup, db: AsyncSession = Depends(get_db)):
             user_id=user.id,
             specialization="General",
             license_number="PENDING",
+            city=data.city,
         )
         db.add(therapist)
         await db.commit()
