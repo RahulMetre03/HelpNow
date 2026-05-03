@@ -6,7 +6,7 @@ import { api, setToken, setUser } from "@/lib/api";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "patient" });
+  const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "patient", city: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -106,6 +106,21 @@ export default function SignupPage() {
                 </button>
               ))}
             </div>
+          </div>
+          <div style={{ marginBottom: "1.2rem" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontSize: "0.85rem", fontWeight: 500, color: "var(--text-secondary)" }}>City</label>
+            <select
+              className="input-field"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              required
+              style={{ cursor: "pointer" }}
+            >
+              <option value="">Select your city</option>
+              {["Pune", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow"].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
             {loading ? <span className="spinner" /> : "Create Account"}

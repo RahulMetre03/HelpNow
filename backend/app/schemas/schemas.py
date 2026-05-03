@@ -9,6 +9,7 @@ class UserSignup(BaseModel):
     password: str
     full_name: str
     role: str = "patient"  # patient | therapist
+    city: str | None = None
 
 
 class UserLogin(BaseModel):
@@ -28,6 +29,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     avatar_url: str | None = None
+    city: str | None = None
     created_at: datetime
 
     class Config:
@@ -46,6 +48,7 @@ class TherapistUpdate(BaseModel):
     specialization: str | None = None
     bio: str | None = None
     experience_years: int | None = None
+    city: str | None = None
 
 
 class TherapistResponse(BaseModel):
@@ -56,6 +59,7 @@ class TherapistResponse(BaseModel):
     bio: str | None = None
     experience_years: int
     rating: float
+    city: str | None = None
     user: UserResponse | None = None
 
     class Config:
@@ -87,6 +91,7 @@ class TherapistDetailResponse(BaseModel):
     bio: str | None = None
     experience_years: int
     rating: float
+    city: str | None = None
     user: UserResponse | None = None
     availability_slots: list[AvailabilityResponse] = []
 

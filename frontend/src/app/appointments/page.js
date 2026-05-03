@@ -19,6 +19,8 @@ export default function AppointmentsPage() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedCity, setSelectedCity] = useState("");
+  const cities = ["Pune", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow"];
 
   useEffect(() => {
     if (bookingModal?.id && bookingDate) {
@@ -34,13 +36,20 @@ export default function AppointmentsPage() {
     const u = getUser();
     if (!u) { router.push("/login"); return; }
     setUserState(u);
-    loadData();
+    const userCity = u.city || "";
+    setSelectedCity(userCity);
+    loadData(userCity);
   }, []);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (user) loadData(selectedCity);
+  }, [selectedCity]);
+
+  const loadData = async (city) => {
     try {
+      setLoading(true);
       const [therapistData, apptData] = await Promise.all([
-        api.getTherapists(),
+        api.getTherapists(null, city || null),
         api.getAppointments(),
       ]);
       setTherapists(therapistData);
@@ -65,7 +74,7 @@ export default function AppointmentsPage() {
       setBookingDate("");
       setBookingTime("");
       setBookingNotes("");
-      loadData();
+      loadData(selectedCity);
     } catch (e) {
       setMessage("Failed to book: " + e.message);
     } finally {
@@ -77,7 +86,7 @@ export default function AppointmentsPage() {
     try {
       await api.updateAppointment(id, { status: "cancelled" });
       setMessage("Appointment cancelled");
-      loadData();
+      loadData(selectedCity);
     } catch (e) { setMessage("Failed to cancel"); }
   };
 
@@ -134,6 +143,36 @@ export default function AppointmentsPage() {
           </div>
         )}
 
+        {/* City Filter */}
+        {tab === "browse" && user?.role === "patient" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>📍 Location:</span>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setSelectedCity("")}
+                style={{
+                  padding: "7px 16px", borderRadius: "20px", border: `1px solid ${!selectedCity ? "var(--primary)" : "var(--border)"}`,
+                  background: !selectedCity ? "rgba(108,99,255,0.15)" : "var(--bg-card)",
+                  color: !selectedCity ? "var(--primary-light)" : "var(--text-secondary)",
+                  cursor: "pointer", fontWeight: 500, fontSize: "0.8rem", fontFamily: "inherit", transition: "all 0.2s",
+                }}
+              >All Cities</button>
+              {cities.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedCity(c)}
+                  style={{
+                    padding: "7px 16px", borderRadius: "20px", border: `1px solid ${selectedCity === c ? "var(--primary)" : "var(--border)"}`,
+                    background: selectedCity === c ? "rgba(108,99,255,0.15)" : "var(--bg-card)",
+                    color: selectedCity === c ? "var(--primary-light)" : "var(--text-secondary)",
+                    cursor: "pointer", fontWeight: 500, fontSize: "0.8rem", fontFamily: "inherit", transition: "all 0.2s",
+                  }}
+                >{c}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: "center", padding: "4rem" }}><span className="spinner" /></div>
         ) : tab === "browse" && user.role === "patient" ? (
@@ -157,6 +196,7 @@ export default function AppointmentsPage() {
                   <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                     <span>⭐ {t.rating.toFixed(1)}</span>
                     <span>🕐 {t.experience_years}y exp</span>
+                    {t.city && <span>📍 {t.city}</span>}
                   </div>
                   {t.availability_slots?.length > 0 && (
                     <div style={{ marginBottom: "1rem" }}>
